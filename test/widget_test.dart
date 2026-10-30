@@ -1,30 +1,66 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:product_catalog/main.dart';
+import 'package:product_catalog/app.dart';
+import 'package:product_catalog/providers/product_provider.dart';
+import 'package:product_catalog/data/models/product_model.dart';
+import 'package:product_catalog/data/models/product_response.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Product Catalog app smoke test', (
+    WidgetTester tester,
+  ) async {
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Mock Product Data
+    final mockResponse = ProductResponse(
+      products: [
+        Product(
+          id: 1,
+          title: 'Test Product',
+          description: 'Test Description',
+          category: 'Test Category',
+          price: 99.99,
+          rating: 4.5,
+          stock: 10,
+          thumbnail: 'https://example.com/image.jpg',
+          images: [],
+        ),
+      ],
+      total: 1,
+      skip: 0,
+      limit: 1,
+    );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          productListProvider.overrideWith(
+            (ref) async => mockResponse,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Wait for FutureProvider
+    await tester.pumpAndSettle();
+
+    // Check AppBar
+    expect(
+      find.text('Product Catalog'),
+      findsOneWidget,
+    );
+
+    // Check Product Data
+    expect(
+      find.text('Test Product'),
+      findsOneWidget,
+    );
+
+    expect(
+      find.text('\$99.99'),
+      findsOneWidget,
+    );
   });
 }

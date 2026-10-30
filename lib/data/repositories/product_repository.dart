@@ -6,25 +6,25 @@ import '../models/product_model.dart';
 import '../models/product_response.dart';
 
 class ProductRepository {
-  final Dio _dio;
+    final Dio _dio;
 
-  ProductRepository(this._dio);
+    ProductRepository(this._dio);
 
-  // Get all products
-  Future<ProductResponse> getProducts() async {
-    final response = await _dio.get(
-      ApiConstants.products,
-    );
+    // Get all products
+    Future<ProductResponse> getProducts() async {
+        final response = await _dio.get(
+        ApiConstants.products,
+        );
 
-    return ProductResponse.fromJson(response.data);
-  }
+        return ProductResponse.fromJson(response.data);
+    }
 
-  // Get product detail
-  Future<Product> getProductById(int id) async {
-    final response = await _dio.get(
-      ApiConstants.productDetail(id),
-    );
+    // Get product detail
+    Future<Product> getProductById(int id) async {
+        final response = await _dio.get(
+        ApiConstants.productDetail(id),
+        );
 
-    return Product.fromJson(response.data);
-  }
+        return Product.fromJson(response.data);
+    }
 }
