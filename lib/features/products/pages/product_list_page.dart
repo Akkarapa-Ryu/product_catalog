@@ -124,14 +124,14 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
     );
   }
 
-void _addToCart(Product product) {
-  ref.read(cartProvider.notifier).update((cart) {
-    return {
-      ...cart,
-      product.id: (cart[product.id] ?? 0) + 1,
-    };
-  });
-}
+  void _addToCart(Product product) {
+    ref.read(cartProvider.notifier).update((cart) {
+      return {
+        ...cart,
+        product.id: (cart[product.id] ?? 0) + 1,
+      };
+    });
+  }
 
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
@@ -183,50 +183,47 @@ void _addToCart(Product product) {
     'Profile',
   ];
 
-Widget _buildCartButton(int cartCount) {
-  return IconButton(
-    onPressed: () {
-      // TODO: เปิดหน้า Cart
-    },
-    icon: Stack(
-      clipBehavior: Clip.none,
-      children: [
-        const Icon(
-          Icons.shopping_bag_outlined,
-          size: 26,
-        ),
-
-        if (cartCount > 0)
-          Positioned(
-            right: -8,
-            top: -8,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              constraints: const BoxConstraints(
-                minWidth: 19,
-                minHeight: 19,
-              ),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                cartCount > 99 ? '99+' : '$cartCount',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+  Widget _buildCartButton(int cartCount) {
+    return IconButton(
+      onPressed: () {
+        // TODO: เปิดหน้า Cart
+      },
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(
+            Icons.shopping_bag_outlined,
+            size: 26,
+          ),
+          if (cartCount > 0)
+            Positioned(
+              right: -8,
+              top: -8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(
+                  minWidth: 19,
+                  minHeight: 19,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  cartCount > 99 ? '99+' : '$cartCount',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
-      ],
-    ),
-  );
-}
-
-
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +271,14 @@ Widget _buildCartButton(int cartCount) {
               children: [
                 IconButton(onPressed: null, icon: Icon(Icons.search)),
                 _buildCartButton(cartCount),
-                IconButton(onPressed: null, icon: Icon(Icons.person)),
+                IconButton(
+                    onPressed: null,
+                    icon: CircleAvatar(
+                        backgroundColor: Colors.blue.shade800,
+                        child: Icon(
+                          Icons.person_outline,
+                          color: Colors.white,
+                        ))),
               ],
             )
           ],
@@ -368,7 +372,7 @@ Widget _buildCartButton(int cartCount) {
                                   ProductDetailPage(productId: product.id)));
                     },
                     onAddToCart: (product) {
-                        _addToCart(product);
+                      _addToCart(product);
                     },
                   );
                   // return const Text('Product');
