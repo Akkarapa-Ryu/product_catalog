@@ -24,3 +24,26 @@ final productDetailProvider =
 
   return repository.getProductById(id);
 });
+
+final productSearchProvider = FutureProvider.family<ProductResponse, String>((ref, query) async {
+  final responsitory = ref.watch(productRepositoryProvider);
+  return responsitory.searchProducts(query: query);
+});
+
+// Get categories
+final productCategoriesProvider = FutureProvider<List<String>>((ref) async {
+  final responsitory = ref.watch(productRepositoryProvider);
+  return responsitory.getCategories();
+});
+
+// Get products by category
+final productCategoryProvider =
+    FutureProvider.family<ProductResponse, String>(
+  (ref, category) async {
+    final repository = ref.watch(productRepositoryProvider);
+
+    return repository.getProductsByCategory(
+      category: category,
+    );
+  },
+);

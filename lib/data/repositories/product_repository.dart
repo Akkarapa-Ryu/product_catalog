@@ -27,4 +27,40 @@ class ProductRepository {
 
         return Product.fromJson(response.data);
     }
+
+    Future<ProductResponse> searchProducts({
+      required String query,
+      int limit = 10,
+      int skip = 0,
+    }) async {
+      final response = await _dio.get(
+        '/products/search',
+      queryParameters: {
+        'q': query,
+        'limit': limit,
+        'skip': skip,
+      }
+      );
+      return ProductResponse.fromJson(response.data);
+    }
+
+    // Get all product categories
+    Future<List<String>> getCategories() async {
+      final response = await _dio.get(
+        '/products/category-list',);
+      return List<String>.from(response.data);
+    }
+
+    // Get products by category
+    Future <ProductResponse> getProductsByCategory({
+      required String category,
+      int limit = 10,
+      int skip = 0,
+    }) async {
+      final response = await _dio.get(
+        '/products/category/$category',
+        queryParameters: {'limit': limit, 'skip': skip,},
+      );
+      return ProductResponse.fromJson(response.data);
+    }
 }

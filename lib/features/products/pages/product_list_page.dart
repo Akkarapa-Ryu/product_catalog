@@ -1,133 +1,189 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:product_catalog/features/products/pages/product_detail_page.dart';
 
-import '../../../../providers/product_provider.dart';
-import 'product_detail_page.dart';
+import '../../../providers/product_provider.dart';
+import '../widgets/product_grid.dart';
+import '../widgets/loading_widget.dart';
+import '../widgets/empty_widget.dart';
+import '../widgets/error_widget.dart';
+import '../widgets/product_grid.dart';
+import '../widgets/category_selector.dart';
 
-class ProductListPage extends ConsumerWidget {
-    const ProductListPage({super.key});
+class ProductListPage extends ConsumerStatefulWidget {
+  const ProductListPage({super.key});
 
-    @override
-    Widget build(BuildContext context, WidgetRef ref) {
-        final productsAsync = ref.watch(productListProvider);
+  @override
+  ConsumerState<ProductListPage> createState() => _ProductListPageState();
+}
 
-        return Scaffold(
-        appBar: AppBar(
-            title: const Row(children: [
-                Icon(
-                    Icons.storefront,
+class _ProductListPageState extends ConsumerState<ProductListPage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  Timer? _debounce;
+
+  String searchQuery = '';
+
+  String? selectedCategory;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _debounce?.cancel();
+
+    _debounce = Timer(
+      const Duration(milliseconds: 400),
+      () {
+        if (!mounted) return;
+
+        setState(() {
+          searchQuery = value.trim();
+        });
+      },
+    );
+  }
+
+  void _clearSearch() {
+    _debounce?.cancel();
+    _searchController.clear();
+
+    setState(() {
+      searchQuery = '';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final productsAsync = searchQuery.isNotEmpty
+        ? ref.watch(productSearchProvider(searchQuery))
+        : selectedCategory != null
+            ? ref.watch(productCategoryProvider(selectedCategory!))
+            : ref.watch(productListProvider);
+
+    final categoriesAsync = ref.watch(productCategoriesProvider);
+    debugPrint('Search Query: $searchQuery');
+    debugPrint('Selected Category: $selectedCategory');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  child: Icon(
+                    Icons.storefront_outlined,
+                    color: Colors.white,
+                  ),
+                  color: Colors.lightBlueAccent,
+                  padding: EdgeInsets.all(7),
                 ),
-                Text('CatalogX'),
-                Icon(
-                    Icons.search,
+                Text(
+                  'CatalogX',
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                Icon(
-                    Icons.shopping_bag_outlined
-                ),
-                Icon(
-                    Icons.person_outline,
-                ),],),
+              ],
+            ),
+            Row(
+              children: [
+                IconButton(onPressed: null, icon: Icon(Icons.search)),
+                IconButton(
+                    onPressed: null, icon: Icon(Icons.shopping_bag_outlined)),
+                IconButton(onPressed: null, icon: Icon(Icons.person))
+              ],
+            )
+          ],
         ),
-        body: productsAsync.when(
-            // Loading
-            loading: () => const Center(
-            child: CircularProgressIndicator(),
-            ),
-
-            // Error
-            error: (error, stackTrace) => Center(
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                Text('Error: $error'),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                    onPressed: () {
-                    ref.invalidate(productListProvider);
-                    },
-                    child: const Text('Retry'),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+              decoration: InputDecoration(
+                hintText: 'ค้นหาสินค้า เช่น iPhone, Perfume...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: _clearSearch,
+                      )
+                    : const IconButton(
+                        onPressed: null, icon: Icon(Icons.mic_none_outlined)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
                 ),
-                ],
+              ),
             ),
-            ),
-
-            // Success
-            data: (response) {
-            return GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.7,
-                ),
-                itemCount: response.products.length,
-                itemBuilder: (context, index) {
-                final product = response.products[index];
-
-                return Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                    onTap: () {
-                        Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => ProductDetailPage(
-                            productId: product.id,
-                            ),
-                        ),
-                        );
-                    },
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                        Expanded(
-                            child: Image.network(
-                            product.thumbnail,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Center(
-                                child: Icon(Icons.image_not_supported),
-                            ),
-                            ),
-                        ),
-                        Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                                Text(
-                                product.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                '\$${product.price.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                    color: Colors.blue,
-                                    fontWeight: FontWeight.bold,
-                                ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text('Rating: ${product.rating}'),
-                            ],
-                            ),
-                        ),
-                        ],
-                    ),
-                    ),
-                );
+          ),
+          IconButton(onPressed: null, icon: Icon(Icons.filter_list)),
+          categoriesAsync.when(
+            loading: () => const LinearProgressIndicator(),
+            error: (error, stackTrace) => const SizedBox.shrink(),
+            data: (categories) {
+              return CategorySelector(
+                categories: categories,
+                selectedCategory: selectedCategory,
+                onSelected: (category) {
+                  setState(() {
+                    selectedCategory = category;
+                  });
+                  debugPrint('Selected Ccategory: $category');
                 },
-            );
+              );
             },
-        ),
-        );
-    }
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                if (searchQuery.isEmpty) {
+                  await ref.refresh(productListProvider.future);
+                } else if (selectedCategory != Null) {
+                  await ref.refresh(
+                    productSearchProvider(searchQuery).future,
+                  );
+                } else {
+                  await ref.refresh(productListProvider.future);
+                }
+              },
+              child: productsAsync.when(
+                loading: () => Text("Loading..."),
+                error: (error, stackTrace) {
+                  return Text('Error');
+                },
+                data: (response) {
+                  // if (response.products.isEmpty) {
+                  //   return const EmptyWidget();
+                  // }
+
+                  return ProductGrid(
+                    products: response.products,
+                    onProductTap: (product) {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  ProductDetailPage(productId: product.id)));
+                    },
+                  );
+                  // return const Text('Product');
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

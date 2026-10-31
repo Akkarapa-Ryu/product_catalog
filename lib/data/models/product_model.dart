@@ -8,6 +8,7 @@ class Product {
   final int stock;
   final String thumbnail;
   final List<String> images;
+  final double discountPercentage;
 
   const Product({
     required this.id,
@@ -19,6 +20,7 @@ class Product {
     required this.stock,
     required this.thumbnail,
     required this.images,
+    required this.discountPercentage,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class Product {
       images: (json['images'] as List<dynamic>)
           .map((image) => image.toString())
           .toList(),
+      discountPercentage: (json['discountPercentage'] as num?)?.toDouble() ?? 0,
     );
   }
 }

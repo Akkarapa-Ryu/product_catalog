@@ -8,10 +8,9 @@ import 'package:product_catalog/data/models/product_model.dart';
 import 'package:product_catalog/data/models/product_response.dart';
 
 void main() {
-  testWidgets('Product Catalog app smoke test', (
+  testWidgets('CatalogX app smoke test', (
     WidgetTester tester,
   ) async {
-
     // Mock Product Data
     final mockResponse = ProductResponse(
       products: [
@@ -25,6 +24,7 @@ void main() {
           stock: 10,
           thumbnail: 'https://example.com/image.jpg',
           images: [],
+          discountPercentage: 10.0,
         ),
       ],
       total: 1,
@@ -35,8 +35,18 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          // Mock Product List
           productListProvider.overrideWith(
             (ref) async => mockResponse,
+          ),
+
+          // Mock Product Categories
+          productCategoriesProvider.overrideWith(
+            (ref) async => [
+              'beauty',
+              'fragrances',
+              'furniture',
+            ],
           ),
         ],
         child: const MyApp(),
@@ -48,7 +58,7 @@ void main() {
 
     // Check AppBar
     expect(
-      find.text('Product Catalog'),
+      find.text('CatalogX'),
       findsOneWidget,
     );
 
