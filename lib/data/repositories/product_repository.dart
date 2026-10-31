@@ -30,7 +30,7 @@ class ProductRepository {
 
     Future<ProductResponse> searchProducts({
       required String query,
-      int limit = 10,
+      int limit = 20,
       int skip = 0,
     }) async {
       final response = await _dio.get(

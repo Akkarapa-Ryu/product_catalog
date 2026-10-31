@@ -35,6 +35,7 @@ class _ProductCardState extends State<ProductCard> {
 
     return widget.product.price / (1 - discount / 100);
   }
+  
 
   @override
   Widget build(BuildContext context) {

@@ -7,11 +7,13 @@ import 'product_card.dart';
 class ProductGrid extends StatelessWidget {
   final List<Product> products;
   final Function(Product) onProductTap;
+  final Function(Product) onAddToCart;
 
   const ProductGrid({
     super.key,
     required this.products,
     required this.onProductTap,
+    required this.onAddToCart,
   });
 
   @override
@@ -43,6 +45,7 @@ class ProductGrid extends StatelessWidget {
             return ProductCard(
               product: product,
               onTap: () => onProductTap(product),
+              onAddToCart: () => onAddToCart(product),
             );
           },
         );

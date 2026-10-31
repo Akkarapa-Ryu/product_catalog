@@ -25,6 +25,7 @@ void main() {
           thumbnail: 'https://example.com/image.jpg',
           images: [],
           discountPercentage: 10.0,
+          brand: 'Test Brand',
         ),
       ],
       total: 1,
@@ -72,5 +73,7 @@ void main() {
       find.text('\$99.99'),
       findsOneWidget,
     );
+
+    expect(find.text('Test Brand'), findsOneWidget);
   });
 }
