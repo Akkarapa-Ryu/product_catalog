@@ -80,49 +80,6 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
     debugPrint('Selected Category: $category');
   }
 
-  void _openFilter() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Filter Products',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'เลือกประเภทสินค้าจาก Category Selector '
-                'ด้านบนของหน้า Catalog',
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Done'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _addToCart(Product product) {
     ref.read(cartProvider.notifier).update((cart) {
       return {
@@ -215,6 +172,29 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _openSearchFilter() async {
+    _debounce?.cancel();
+
+    final result = await Navigator.push<SearchFilterResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchFilterPage(
+          initialSearch: searchQuery,
+          initialCategory: selectedCategory,
+        ),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+
+    _searchController.text = result.searchQuery;
+
+    setState(() {
+      searchQuery = result.searchQuery;
+      selectedCategory = result.category;
+    });
   }
 
   @override
@@ -319,12 +299,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                 height: 54,
                 child: IconButton(
                   icon: Icon(Icons.tune),
-                  onPressed: () {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => SearchFilterPage()));
-                  },
+                  onPressed: _openSearchFilter,
                 ),
               ),
             ],
@@ -492,7 +467,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openFilter,
+        onPressed: _openSearchFilter,
         backgroundColor: Colors.blue.shade800,
         foregroundColor: Colors.white,
         shape: CircleBorder(),
