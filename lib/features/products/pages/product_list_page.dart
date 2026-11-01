@@ -1,18 +1,18 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:product_catalog/features/products/pages/product_detail_page.dart';
-import 'package:product_catalog/providers/cart_provider.dart';
-
+import '../pages/product_detail_page.dart';
+import '../pages/search_filter_page.dart';
+import '../widgets/empty_widget.dart';
+import '../widgets/error_widget.dart';
+import '../widgets/loading_widget.dart';
+import '../../../providers/cart_provider.dart';
 import '../../../providers/product_provider.dart';
+import '../../../providers/product_pagination_provider.dart';
 import '../widgets/product_grid.dart';
 import '../widgets/category_selector.dart';
 import '../../../data/models/product_model.dart';
-import '../../../data/models/product_response.dart';
-import '../../../providers/cart_provider.dart';
 
 class ProductListPage extends ConsumerStatefulWidget {
   const ProductListPage({super.key});
@@ -27,11 +27,14 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
   Timer? _debounce;
   String searchQuery = '';
   String? selectedCategory;
-  static const int _pageSize = 20;
-  final List<Product> _moreProducts = [];
-  bool _isLoadingMore = false;
-  String? _loadMoreError;
   int _selectedNavIndex = 0;
+
+  final List<String> _navigationLabels = [
+    'Catalog',
+    'Categories',
+    'Wishlist',
+    'Profile',
+  ];
 
   @override
   void dispose() {
@@ -50,8 +53,6 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
 
         setState(() {
           searchQuery = value.trim();
-          _moreProducts.clear();
-          _loadMoreError = null;
         });
       },
     );
@@ -74,8 +75,6 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
     setState(() {
       searchQuery = '';
       selectedCategory = category;
-      _moreProducts.clear();
-      _loadMoreError = null;
     });
 
     debugPrint('Selected Category: $category');
@@ -176,13 +175,6 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
     );
   }
 
-  final List<String> _navigationLabels = [
-    'Catalog',
-    'Categories',
-    'Wishlist',
-    'Profile',
-  ];
-
   Widget _buildCartButton(int cartCount) {
     return IconButton(
       onPressed: () {
@@ -227,11 +219,15 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final productsAsync = searchQuery.isNotEmpty
-        ? ref.watch(productSearchProvider(searchQuery))
+    final productQuery = searchQuery.isNotEmpty
+        ? ProductQuery.search(searchQuery)
         : selectedCategory != null
-            ? ref.watch(productCategoryProvider(selectedCategory!))
-            : ref.watch(productListProvider);
+            ? ProductQuery.category(selectedCategory!)
+            : ProductQuery.all();
+
+    final productsAsync = ref.watch(
+      productPaginationProvider(productQuery),
+    );
 
     final categoriesAsync = ref.watch(productCategoriesProvider);
     final cartCount = ref.watch(cartItemCountProvider);
@@ -292,7 +288,7 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                 child: Container(
                   height: 54,
                   decoration: BoxDecoration(
-                      color: Colors.lightBlue[50],
+                      color: Colors.blueGrey[50],
                       borderRadius: BorderRadius.circular(25)),
                   child: TextField(
                     controller: _searchController,
@@ -323,7 +319,12 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
                 height: 54,
                 child: IconButton(
                   icon: Icon(Icons.tune),
-                  onPressed: null,
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => SearchFilterPage()));
+                  },
                 ),
               ),
             ],
@@ -342,41 +343,149 @@ class _ProductListPageState extends ConsumerState<ProductListPage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
-                if (searchQuery.isEmpty) {
-                  await ref.refresh(productListProvider.future);
-                } else if (selectedCategory != null) {
-                  await ref.refresh(
-                    productSearchProvider(searchQuery).future,
-                  );
-                } else {
-                  await ref.refresh(productListProvider.future);
-                }
+                await ref
+                    .read(
+                      productPaginationProvider(productQuery).notifier,
+                    )
+                    .refresh();
               },
-              child: productsAsync.when(
-                loading: () => Text("Loading..."),
-                error: (error, stackTrace) {
-                  return Text('Error');
-                },
-                data: (response) {
-                  // if (response.products.isEmpty) {
-                  //   return const EmptyWidget();
-                  // }
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.axis == Axis.vertical &&
+                      notification.metrics.pixels >=
+                          notification.metrics.maxScrollExtent - 300) {
+                    unawaited(
+                      ref
+                          .read(
+                            productPaginationProvider(productQuery).notifier,
+                          )
+                          .loadMore(),
+                    );
+                  }
 
-                  return ProductGrid(
-                    products: response.products,
-                    onProductTap: (product) {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  ProductDetailPage(productId: product.id)));
-                    },
-                    onAddToCart: (product) {
-                      _addToCart(product);
-                    },
-                  );
-                  // return const Text('Product');
+                  return false;
                 },
+                child: productsAsync.when(
+                  // Initial Loading
+                  loading: () => ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(
+                        height: 350,
+                        child: LoadingWidget(),
+                      ),
+                    ],
+                  ),
+
+                  // Initial Error
+                  error: (error, stackTrace) => ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(
+                        height: 350,
+                        child: ErrorWidgetView(
+                          message: 'Unable to load products.',
+                          onRetry: () {
+                            unawaited(
+                              ref
+                                  .read(
+                                    productPaginationProvider(productQuery)
+                                        .notifier,
+                                  )
+                                  .refresh(),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Data
+                  data: (pagination) {
+                    if (pagination.products.isEmpty) {
+                      return ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: const [
+                          SizedBox(
+                            height: 350,
+                            child: EmptyWidget(
+                              message: 'Try searching for another product.',
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Stack(
+                      children: [
+                        ProductGrid(
+                          products: pagination.products,
+                          onProductTap: (product) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailPage(
+                                  productId: product.id,
+                                ),
+                              ),
+                            );
+                          },
+                          onAddToCart: _addToCart,
+                        ),
+
+                        // Load More Loading / Error
+                        if (pagination.isLoadingMore)
+                          const Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: LinearProgressIndicator(),
+                          ),
+
+                        if (pagination.loadMoreError != null)
+                          Positioned(
+                            left: 12,
+                            right: 12,
+                            bottom: 12,
+                            child: Material(
+                              elevation: 4,
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Expanded(
+                                      child: Text(
+                                        'Unable to load more products.',
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        unawaited(
+                                          ref
+                                              .read(
+                                                productPaginationProvider(
+                                                        productQuery)
+                                                    .notifier,
+                                              )
+                                              .retryLoadMore(),
+                                        );
+                                      },
+                                      child: const Text('Retry'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),

@@ -25,178 +25,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
 
   String selectedColor = 'Natural Titanium';
 
-  @override
-  Widget build(BuildContext context) {
-    final productAsync = ref.watch(productDetailProvider(widget.productId));
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F6FC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F6FC),
-        elevation: 0,
-        title: const Text(
-          'Product Details',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Share feature is not connected yet.'),
-                ),
-              );
-            },
-            icon: const Icon(Icons.share_outlined),
-          ),
-          CircleAvatar(
-            backgroundColor: Colors.blue.shade800,
-            child: Icon(
-              Icons.person_outline,
-              color: Colors.white,
-            ),
-          )
-        ],
-      ),
-      body: productAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, stackTrace) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 45,
-                color: Colors.red,
-              ),
-              const SizedBox(height: 12),
-              const Text('Unable to load product details'),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () {
-                  ref.invalidate(
-                    productDetailProvider(widget.productId),
-                  );
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-        data: (product) {
-          final imageUrls =
-              product.images.isNotEmpty ? product.images : [product.thumbnail];
-
-          final safeIndex =
-              selectedImageIndex < imageUrls.length ? selectedImageIndex : 0;
-
-          final hasDiscount = product.discountPercentage > 0 &&
-              product.discountPercentage < 100;
-
-          final originalPrice = hasDiscount
-              ? product.price / (1 - product.discountPercentage / 100)
-              : product.price;
-
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final isTablet = constraints.maxWidth >= 700;
-
-              return Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: 1100,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Product Category
-                              _buildProductHeader(product),
-
-                              const SizedBox(height: 12),
-
-                              // Product Gallery + Summary
-                              if (isTablet)
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      flex: 5,
-                                      child: _buildGallery(
-                                        product,
-                                        imageUrls,
-                                        safeIndex,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      flex: 4,
-                                      child: _buildSummary(
-                                        product,
-                                        hasDiscount,
-                                        originalPrice,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              else ...[
-                                _buildGallery(
-                                  product,
-                                  imageUrls,
-                                  safeIndex,
-                                ),
-                                const SizedBox(height: 12),
-                                _buildSummary(
-                                  product,
-                                  hasDiscount,
-                                  originalPrice,
-                                ),
-                              ],
-
-                              const SizedBox(height: 12),
-
-                              // Quantity Selector
-                              _buildQuantity(product),
-
-                              const SizedBox(height: 12),
-
-                              // Product Information
-                              _buildProductInformation(product),
-
-                              const SizedBox(height: 12),
-
-                              // Service Information
-                              _buildServiceInformation(),
-
-                              const SizedBox(height: 12),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Bottom Action Bar
-                  _buildBottomActions(product),
-                ],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  // Product Category Header
+    // Product Category Header
   Widget _buildProductHeader(Product product) {
     return Row(
       children: [
@@ -987,4 +816,179 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         ),
       );
   }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final productAsync = ref.watch(productDetailProvider(widget.productId));
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F6FC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF7F6FC),
+        elevation: 0,
+        title: const Text(
+          'Product Details',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Share feature is not connected yet.'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.share_outlined),
+          ),
+          CircleAvatar(
+            backgroundColor: Colors.blue.shade800,
+            child: Icon(
+              Icons.person_outline,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(width: 10,)
+        ],
+      ),
+      body: productAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        error: (error, stackTrace) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 45,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 12),
+              const Text('Unable to load product details'),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () {
+                  ref.invalidate(
+                    productDetailProvider(widget.productId),
+                  );
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+        data: (product) {
+          final imageUrls =
+              product.images.isNotEmpty ? product.images : [product.thumbnail];
+
+          final safeIndex =
+              selectedImageIndex < imageUrls.length ? selectedImageIndex : 0;
+
+          final hasDiscount = product.discountPercentage > 0 &&
+              product.discountPercentage < 100;
+
+          final originalPrice = hasDiscount
+              ? product.price / (1 - product.discountPercentage / 100)
+              : product.price;
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isTablet = constraints.maxWidth >= 700;
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: 1100,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Product Category
+                              _buildProductHeader(product),
+
+                              const SizedBox(height: 12),
+
+                              // Product Gallery + Summary
+                              if (isTablet)
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: _buildGallery(
+                                        product,
+                                        imageUrls,
+                                        safeIndex,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      flex: 4,
+                                      child: _buildSummary(
+                                        product,
+                                        hasDiscount,
+                                        originalPrice,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else ...[
+                                _buildGallery(
+                                  product,
+                                  imageUrls,
+                                  safeIndex,
+                                ),
+                                const SizedBox(height: 12),
+                                _buildSummary(
+                                  product,
+                                  hasDiscount,
+                                  originalPrice,
+                                ),
+                              ],
+
+                              const SizedBox(height: 12),
+
+                              // Quantity Selector
+                              _buildQuantity(product),
+
+                              const SizedBox(height: 12),
+
+                              // Product Information
+                              _buildProductInformation(product),
+
+                              const SizedBox(height: 12),
+
+                              // Service Information
+                              _buildServiceInformation(),
+
+                              const SizedBox(height: 12),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Bottom Action Bar
+                  _buildBottomActions(product),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+
 }
